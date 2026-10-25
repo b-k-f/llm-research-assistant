@@ -1,3 +1,5 @@
+import itertools
+
 import pytest
 
 from research_assistant.ingest import split_text
@@ -24,7 +26,7 @@ def test_all_words_are_covered():
 def test_consecutive_chunks_overlap():
     text = " ".join(f"token{i}" for i in range(200))
     chunks = split_text(text, chunk_size=150, overlap=40)
-    for a, b in zip(chunks, chunks[1:]):
+    for a, b in itertools.pairwise(chunks):
         assert set(a.split()) & set(b.split())
 
 
