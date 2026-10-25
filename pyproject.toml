@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-assistant"
+version = "0.1.0"
+description = "An AI research assistant that searches arXiv and answers questions about papers with citations (RAG)."
+requires-python = ">=3.10"
+dependencies = [
+    "arxiv>=2.1",
+    "pypdf>=4.0",
+    "chromadb>=0.5",
+    "sentence-transformers>=3.0",
+    "openai>=1.40",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+research-assistant = "research_assistant.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
