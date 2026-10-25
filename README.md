@@ -1,12 +1,12 @@
 # 📚 AI Research Assistant
-
+user
 An LLM-powered assistant that searches arXiv, reads scientific papers, and answers questions about them **with citations to the exact paper and page**.
 
 Built step by step to cover the full LLM engineering stack: RAG, evaluation, agents, fine-tuning and MLOps.
 
 > **Status:** Stage 1 (RAG pipeline) ✅ — see the [roadmap](#roadmap).
 
-![CI](https://github.com/<your-username>/llm-research-assistant/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/b-k-f/llm-research-assistant/actions/workflows/ci.yml/badge.svg)
 
 ## Demo
 
@@ -60,7 +60,7 @@ Every push also runs linting and tests automatically (CI workflow).
 ## Local setup
 
 ```bash
-git clone https://github.com/<your-username>/llm-research-assistant.git
+git clone https://github.com/b-k-f/llm-research-assistant.git
 cd llm-research-assistant
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
