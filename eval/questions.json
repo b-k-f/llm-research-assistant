@@ -1,0 +1,96 @@
+{
+  "description": "Fixed corpus and question set for evaluating retrieval and answers. A retrieved chunk counts as relevant when it comes from the expected paper and contains at least one evidence phrase (case-insensitive).",
+  "papers": [
+    {"arxiv_id": "2005.11401", "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"},
+    {"arxiv_id": "2004.04906", "title": "Dense Passage Retrieval for Open-Domain Question Answering"},
+    {"arxiv_id": "2307.03172", "title": "Lost in the Middle: How Language Models Use Long Contexts"},
+    {"arxiv_id": "2310.11511", "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"},
+    {"arxiv_id": "2312.10997", "title": "Retrieval-Augmented Generation for Large Language Models: A Survey"}
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "question": "What are the two RAG model formulations proposed in the original RAG paper, and how do they differ?",
+      "arxiv_id": "2005.11401",
+      "evidence": ["RAG-Sequence", "RAG-Token"],
+      "reference": "RAG-Sequence uses the same retrieved document to generate the whole output sequence, while RAG-Token can use a different document for each generated token."
+    },
+    {
+      "id": "q02",
+      "question": "Which pre-trained model is used as the generator in the original RAG models?",
+      "arxiv_id": "2005.11401",
+      "evidence": ["BART"],
+      "reference": "BART (BART-large), a pre-trained sequence-to-sequence transformer."
+    },
+    {
+      "id": "q03",
+      "question": "What serves as the non-parametric memory in the original RAG paper?",
+      "arxiv_id": "2005.11401",
+      "evidence": ["dense vector index", "non-parametric memory"],
+      "reference": "A dense vector index of Wikipedia, accessed with a pre-trained neural retriever (DPR)."
+    },
+    {
+      "id": "q04",
+      "question": "How is Wikipedia split into passages for dense passage retrieval?",
+      "arxiv_id": "2004.04906",
+      "evidence": ["100 words"],
+      "reference": "Articles are split into disjoint text blocks of 100 words, which serve as the basic retrieval units."
+    },
+    {
+      "id": "q05",
+      "question": "What kind of negative examples does DPR use during training?",
+      "arxiv_id": "2004.04906",
+      "evidence": ["in-batch", "hard negative"],
+      "reference": "In-batch negatives (the positive passages of other questions in the same batch), combined with hard negatives retrieved by BM25."
+    },
+    {
+      "id": "q06",
+      "question": "What architecture does DPR use to encode questions and passages?",
+      "arxiv_id": "2004.04906",
+      "evidence": ["dual-encoder", "two independent BERT", "dot product"],
+      "reference": "Two independent BERT encoders (a dual-encoder), with relevance computed as the dot product of the question and passage embeddings."
+    },
+    {
+      "id": "q07",
+      "question": "Where in a long input context do language models use relevant information best?",
+      "arxiv_id": "2307.03172",
+      "evidence": ["middle of", "beginning or end"],
+      "reference": "At the beginning or the end of the context; performance degrades significantly when the relevant information is in the middle."
+    },
+    {
+      "id": "q08",
+      "question": "Which tasks were used to study how language models use long contexts?",
+      "arxiv_id": "2307.03172",
+      "evidence": ["key-value retrieval", "multi-document question answering"],
+      "reference": "Multi-document question answering and synthetic key-value retrieval."
+    },
+    {
+      "id": "q09",
+      "question": "What special tokens does Self-RAG generate to critique its own outputs?",
+      "arxiv_id": "2310.11511",
+      "evidence": ["reflection token"],
+      "reference": "Reflection tokens, which include retrieval tokens (deciding whether to retrieve) and critique tokens (judging relevance, support and usefulness)."
+    },
+    {
+      "id": "q10",
+      "question": "Does Self-RAG retrieve passages for every query?",
+      "arxiv_id": "2310.11511",
+      "evidence": ["on-demand", "on demand", "adaptive"],
+      "reference": "No. It retrieves adaptively, on demand, only when the model decides that retrieval is needed."
+    },
+    {
+      "id": "q11",
+      "question": "What three paradigms of RAG does the survey describe?",
+      "arxiv_id": "2312.10997",
+      "evidence": ["Modular RAG", "Advanced RAG"],
+      "reference": "Naive RAG, Advanced RAG and Modular RAG."
+    },
+    {
+      "id": "q12",
+      "question": "Which automated evaluation tools or frameworks for RAG does the survey mention?",
+      "arxiv_id": "2312.10997",
+      "evidence": ["RAGAS", "TruLens"],
+      "reference": "Automated tools such as RAGAS, ARES and TruLens."
+    }
+  ]
+}
