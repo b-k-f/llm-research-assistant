@@ -45,7 +45,7 @@ def search_and_download(query: str, max_results: int, pdf_dir: Path) -> list[Pap
             pdf_url = result.pdf_url or result.entry_id.replace("/abs/", "/pdf/")
             try:
                 download_pdf(pdf_url, pdf_path)
-            except Exception as error:  # one failed download should not stop the run
+            except OSError as error:  # network, HTTP or file errors: skip this paper
                 print(f"  ! could not download {arxiv_id}: {error}")
                 continue
             time.sleep(1)  # be gentle with arXiv's servers
