@@ -1,8 +1,12 @@
 """Search arXiv and download paper PDFs."""
+import time
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
 import arxiv
+
+USER_AGENT = "llm-research-assistant/0.1 (https://github.com/b-k-f/llm-research-assistant)"
 
 
 @dataclass
@@ -13,6 +17,13 @@ class Paper:
     published: str
     url: str
     pdf_path: Path
+
+
+def download_pdf(url: str, dest: Path) -> None:
+    """Download a PDF with a polite User-Agent (arXiv asks clients to identify themselves)."""
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        dest.write_bytes(response.read())
 
 
 def search_and_download(query: str, max_results: int, pdf_dir: Path) -> list[Paper]:
@@ -28,10 +39,16 @@ def search_and_download(query: str, max_results: int, pdf_dir: Path) -> list[Pap
     papers = []
     for result in client.results(search):
         arxiv_id = result.get_short_id()
-        filename = f"{arxiv_id.replace('/', '_')}.pdf"
-        pdf_path = pdf_dir / filename
+        pdf_path = pdf_dir / f"{arxiv_id.replace('/', '_')}.pdf"
+
         if not pdf_path.exists():
-            result.download_pdf(dirpath=str(pdf_dir), filename=filename)
+            pdf_url = result.pdf_url or result.entry_id.replace("/abs/", "/pdf/")
+            try:
+                download_pdf(pdf_url, pdf_path)
+            except Exception as error:  # one failed download should not stop the run
+                print(f"  ! could not download {arxiv_id}: {error}")
+                continue
+            time.sleep(1)  # be gentle with arXiv's servers
 
         papers.append(
             Paper(
