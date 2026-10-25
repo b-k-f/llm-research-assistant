@@ -1,12 +1,12 @@
 # 📚 AI Research Assistant
-user
+
 An LLM-powered assistant that searches arXiv, reads scientific papers, and answers questions about them **with citations to the exact paper and page**.
 
 Built step by step to cover the full LLM engineering stack: RAG, evaluation, agents, fine-tuning and MLOps.
 
-> **Status:** Stage 1 (RAG pipeline) ✅ — see the [roadmap](#roadmap).
+> **Status:** Stage 1 (RAG pipeline) ✅ · Stage 2 (evaluation) 🚧 — see the [roadmap](#roadmap).
 
-![CI](https://github.com/b-k-f/llm-research-assistant/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/<your-username>/llm-research-assistant/actions/workflows/ci.yml/badge.svg)
 
 ## Demo
 
@@ -57,10 +57,24 @@ Everything runs on GitHub Actions:
 
 Every push also runs linting and tests automatically (CI workflow).
 
+## Evaluation
+
+Retrieval is evaluated on a fixed corpus of 5 RAG papers and 12 hand-written questions ([`eval/questions.json`](eval/questions.json)). Each question records the paper that answers it, evidence phrases and a reference answer.
+
+- **Relevance:** a retrieved chunk is relevant when it comes from the expected paper *and* contains an evidence phrase.
+- **Metrics:** Hit@1, Hit@5, MRR@10, paper-level Hit@5 and retrieval latency.
+- **Experiments:** chunk sizes (500 / 1000 / 1500 characters, 20% overlap) × retrieval methods:
+  - `vector`: cosine similarity on sentence-transformer embeddings
+  - `hybrid`: BM25 keyword search + vector search, merged with reciprocal rank fusion
+  - `hybrid+rerank`: hybrid candidates re-scored by a cross-encoder (`ms-marco-MiniLM-L-6-v2`)
+- **Answer quality (optional):** answers from the best configuration are graded 0–2 against the reference by an LLM judge.
+
+Run it from **Actions → Evaluate retrieval → Run workflow**, or locally with `research-assistant evaluate --judge`.
+
 ## Local setup
 
 ```bash
-git clone https://github.com/b-k-f/llm-research-assistant.git
+git clone https://github.com/<your-username>/llm-research-assistant.git
 cd llm-research-assistant
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
@@ -88,7 +102,7 @@ pytest                                                    # run tests
 
 ## Results
 
-<!-- Stage 2: add your evaluation table here, e.g.
+<!-- Paste the tables from the "Evaluate retrieval" run summary here, e.g.
 | Setup | Hit rate @5 | Faithfulness | Latency |
 |---|---|---|---|
 | chunk 500 | ... | ... | ... |
@@ -108,10 +122,16 @@ src/research_assistant/
 ├── ingest.py         # PDF -> page text -> chunks
 ├── vectorstore.py    # embeddings + Chroma
 ├── rag.py            # retrieval + prompt + LLM call
+├── metrics.py        # Hit@k, MRR, rank fusion, judge parsing
+├── evaluation.py     # Stage 2 experiments and report
 └── cli.py            # command-line interface
+eval/
+└── questions.json    # fixed corpus + test questions
 tests/
-└── test_chunking.py
+├── test_chunking.py
+└── test_metrics.py
 .github/workflows/
 ├── ci.yml            # lint + tests on every push
-└── ask.yml           # run the assistant in the cloud
+├── ask.yml           # run the assistant in the cloud
+└── evaluate.yml      # run the evaluation in the cloud
 ```
