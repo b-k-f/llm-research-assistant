@@ -14,7 +14,7 @@ class Settings:
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
-    llm_model: str = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+    llm_model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
     chunk_size: int = int(os.getenv("CHUNK_SIZE", "1000"))
     chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "200"))
     top_k: int = int(os.getenv("TOP_K", "5"))
