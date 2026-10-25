@@ -3,8 +3,10 @@
     research-assistant fetch "retrieval augmented generation" --max 5
     research-assistant ask "What chunking strategies do these papers compare?"
     research-assistant stats
+    research-assistant evaluate --chunk-sizes 500,1000,1500 --judge
 """
 import argparse
+from pathlib import Path
 
 from .arxiv_client import search_and_download
 from .config import settings
@@ -58,6 +60,20 @@ def cmd_stats(_: argparse.Namespace) -> None:
     print(f"{store.count()} chunks indexed in {settings.chroma_dir}")
 
 
+def cmd_evaluate(args: argparse.Namespace) -> None:
+    from .evaluation import run_evaluation  # heavy imports only when evaluating
+
+    report = run_evaluation(
+        eval_file=Path(args.eval_file),
+        chunk_sizes=[int(size) for size in args.chunk_sizes.split(",")],
+        methods=[m.strip() for m in args.methods.split(",")],
+        judge=args.judge,
+        out_dir=Path(args.out_dir),
+        settings=settings,
+    )
+    print(report)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="research-assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -73,6 +89,14 @@ def main() -> None:
 
     p_stats = sub.add_parser("stats", help="show index size")
     p_stats.set_defaults(func=cmd_stats)
+
+    p_eval = sub.add_parser("evaluate", help="evaluate retrieval (and answers) on the test set")
+    p_eval.add_argument("--eval-file", default="eval/questions.json")
+    p_eval.add_argument("--chunk-sizes", default="500,1000,1500")
+    p_eval.add_argument("--methods", default="vector,hybrid,hybrid+rerank")
+    p_eval.add_argument("--judge", action="store_true", help="also grade answers with an LLM judge")
+    p_eval.add_argument("--out-dir", default="results")
+    p_eval.set_defaults(func=cmd_evaluate)
 
     args = parser.parse_args()
     args.func(args)
