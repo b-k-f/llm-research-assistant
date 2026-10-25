@@ -1,0 +1,66 @@
+name: Ask the research assistant
+
+# Run it from the Actions tab: "Ask the research assistant" -> "Run workflow"
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "arXiv search query"
+        required: true
+        default: "retrieval augmented generation"
+      max_papers:
+        description: "Number of papers to index"
+        required: true
+        default: "5"
+      question:
+        description: "Your question about the papers"
+        required: true
+        default: "What are the main limitations of RAG systems?"
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL || 'https://api.groq.com/openai/v1' }}
+      LLM_MODEL: ${{ vars.LLM_MODEL || 'llama-3.3-70b-versatile' }}
+      # inputs passed through env vars (not inlined in shell) to avoid script injection
+      QUERY: ${{ inputs.query }}
+      MAX_PAPERS: ${{ inputs.max_papers }}
+      QUESTION: ${{ inputs.question }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install (CPU-only PyTorch keeps the install fast)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e .
+
+      - name: Fetch and index papers
+        run: research-assistant fetch "$QUERY" --max "$MAX_PAPERS"
+
+      - name: Ask the question
+        run: |
+          research-assistant ask "$QUESTION" | tee answer.txt
+          {
+            echo "## ❓ $QUESTION"
+            echo
+            echo "**Papers indexed for:** \`$QUERY\`"
+            echo
+            echo '```'
+            cat answer.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save answer
+        uses: actions/upload-artifact@v4
+        with:
+          name: answer
+          path: answer.txt
