@@ -15,8 +15,8 @@ class Settings:
     llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
     llm_model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
-    chunk_size: int = int(os.getenv("CHUNK_SIZE", "1000"))
-    chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "200"))
+    chunk_size: int = int(os.getenv("CHUNK_SIZE", "500"))
+    chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "100"))
     top_k: int = int(os.getenv("TOP_K", "5"))
 
     @property
