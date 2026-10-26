@@ -2,16 +2,17 @@
 
     research-assistant fetch "retrieval augmented generation" --max 5
     research-assistant ask "What chunking strategies do these papers compare?"
-    research-assistant stats
+    research-assistant agent "How does Self-RAG decide when to retrieve?"
     research-assistant evaluate --chunk-sizes 500,1000,1500 --judge
+    research-assistant stats
 """
 import argparse
 from pathlib import Path
 
 from .arxiv_client import search_and_download
 from .config import settings
-from .ingest import chunk_pdf
 from .rag import answer
+from .tools import index_paper
 from .vectorstore import VectorStore
 
 
@@ -19,28 +20,12 @@ def cmd_fetch(args: argparse.Namespace) -> None:
     print(f"Searching arXiv for: {args.query!r}")
     papers = search_and_download(args.query, args.max, settings.pdf_dir)
     store = VectorStore(settings.chroma_dir, settings.embedding_model)
-
     for paper in papers:
-        chunks = chunk_pdf(paper.pdf_path, settings.chunk_size, settings.chunk_overlap)
-        if not chunks:
+        chunks = index_paper(paper, paper.pdf_path, store, settings)
+        if chunks:
+            print(f"  + {paper.arxiv_id}  {paper.title[:70]}  ({chunks} chunks)")
+        else:
             print(f"  ! no text extracted from {paper.arxiv_id}, skipped")
-            continue
-        store.add(
-            ids=[f"{paper.arxiv_id}-{c.chunk_index}" for c in chunks],
-            texts=[c.text for c in chunks],
-            metadatas=[
-                {
-                    "arxiv_id": paper.arxiv_id,
-                    "title": paper.title,
-                    "authors": ", ".join(paper.authors),
-                    "published": paper.published,
-                    "url": paper.url,
-                    "page": c.page,
-                }
-                for c in chunks
-            ],
-        )
-        print(f"  + {paper.arxiv_id}  {paper.title[:70]}  ({len(chunks)} chunks)")
     print(f"Done. {store.count()} chunks in the index.")
 
 
@@ -52,12 +37,31 @@ def cmd_ask(args: argparse.Namespace) -> None:
         print("Sources:")
         for i, hit in enumerate(result["sources"], start=1):
             m = hit["metadata"]
-            print(f"  [{i}] {m['title'][:70]} - p.{m['page']} - {m['url']} (score {hit['score']:.2f})")
+            print(f"  [{i}] {m['title'][:70]} - p.{m['page']} - {m['url']} "
+                  f"(score {hit['score']:.2f})")
 
 
-def cmd_stats(_: argparse.Namespace) -> None:
+def cmd_agent(args: argparse.Namespace) -> None:
+    from openai import OpenAI, RateLimitError
+
+    from .agent import format_trace, run_agent
+    from .tools import ResearchToolbox
+
     store = VectorStore(settings.chroma_dir, settings.embedding_model)
-    print(f"{store.count()} chunks indexed in {settings.chroma_dir}")
+    client = OpenAI(base_url=settings.llm_base_url, api_key=settings.llm_api_key or "not-needed")
+    result = run_agent(
+        args.question,
+        ResearchToolbox(store, settings),
+        client,
+        settings.llm_model,
+        max_steps=args.max_steps,
+        retry_on=(RateLimitError,),
+    )
+    trace = format_trace(args.question, result, settings.llm_model)
+    trace_file = Path(args.trace_file)
+    trace_file.parent.mkdir(parents=True, exist_ok=True)
+    trace_file.write_text(trace)
+    print("\n" + trace)
 
 
 def cmd_evaluate(args: argparse.Namespace) -> None:
@@ -74,6 +78,11 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
     print(report)
 
 
+def cmd_stats(_: argparse.Namespace) -> None:
+    store = VectorStore(settings.chroma_dir, settings.embedding_model)
+    print(f"{store.count()} chunks indexed in {settings.chroma_dir}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="research-assistant")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -87,8 +96,11 @@ def main() -> None:
     p_ask.add_argument("question")
     p_ask.set_defaults(func=cmd_ask)
 
-    p_stats = sub.add_parser("stats", help="show index size")
-    p_stats.set_defaults(func=cmd_stats)
+    p_agent = sub.add_parser("agent", help="let the agent find papers and answer")
+    p_agent.add_argument("question")
+    p_agent.add_argument("--max-steps", type=int, default=8)
+    p_agent.add_argument("--trace-file", default="results/agent_trace.md")
+    p_agent.set_defaults(func=cmd_agent)
 
     p_eval = sub.add_parser("evaluate", help="evaluate retrieval (and answers) on the test set")
     p_eval.add_argument("--eval-file", default="eval/questions.json")
@@ -97,6 +109,9 @@ def main() -> None:
     p_eval.add_argument("--judge", action="store_true", help="also grade answers with an LLM judge")
     p_eval.add_argument("--out-dir", default="results")
     p_eval.set_defaults(func=cmd_evaluate)
+
+    p_stats = sub.add_parser("stats", help="show index size")
+    p_stats.set_defaults(func=cmd_stats)
 
     args = parser.parse_args()
     args.func(args)
